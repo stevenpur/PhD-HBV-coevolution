@@ -68,8 +68,12 @@ tree$edge.length <- sample(
 	* starting sequence at the root of the tree
 	* The allele available (A and B for biallelic sites)
 	* The rate matrix
-	Then simulate the tree by sampling from the $exp(Qt)$ matrix at each node of the tree. Where $t$ is the time passed (the branch length), and $Q$ is the rate matrix
+	Then simulate the sequence by sampling from the $exp(Qt)$ matrix at each node of the tree. Where $t$ is the time passed (the branch length), and $Q$ is the rate matrix. 
 
+	For example, for a given branch with length $t$, if at the start of the branch, a given site has an allele A. To determine what the state of the site is, we would need to sample the allele from the probability distribution: $X exp(Qt)$, where X is (1, 0) to represent allele A at the start of the branch.
+	
+	The full code of the function is as follow:
+	
 ```R
 simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) + 1, result = list(), head_run = T) {
 
