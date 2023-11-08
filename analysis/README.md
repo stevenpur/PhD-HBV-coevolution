@@ -12,10 +12,10 @@ where $u$ is the mutation rate. Following this rate matrix, we can define a rate
 
 |     | AA  | AB  | BA  | BB  |
 | --- | --- | --- | --- | --- |
-| AA  |  -2$u$   | $u$ | $u$ | 0   |
-| AB  | $u$ |  -2$u$   | 0   | $u$ |
-| BA  | $u$ | 0   |   -2$u$   | $u$ |
-| BB  | 0   | $u$ | $u$ |    -2$u$  |
+| AA  |  $-2u$   | $u$ | $u$ | 0   |
+| AB  | $u$ |  $-2u$   | 0   | $u$ |
+| BA  | $u$ | 0   |   $-2u$   | $u$ |
+| BB  | 0   | $u$ | $u$ |    $-2u$  |
 
 This matrix assumes that the probability of two sites changing simultaneously is 0. Now, if we consider a pair of sites that are coevolving. For a pair of sites (X, Y) that take the allele pair AA:
 
@@ -25,10 +25,10 @@ Site X evolves independently from Site Y, freely changing from A to B. Site Y is
    
 |     | AA  | AB  | BA  | BB  |
 | --- | --- | --- | --- | --- |
-| AA  |  -2$u$   | $u$ | $u$ | 0   |
-| AB  | $u$ |  -2$u$   | 0   | $u$ |
-| BA  | $u$ | 0   |   -$(1+C)u$   | $Cu$ |
-| BB  | 0   | $u$ | $u/C$ |    -$(1+1/C)u$  |
+| AA  |  $-2u$   | $u$ | $u$ | 0   |
+| AB  | $u$ |  $-2u$   | 0   | $u$ |
+| BA  | $u$ | 0   |   $-(1+C)u$   | $Cu$ |
+| BB  | 0   | $u$ | $u/C$ |    $-(1+1/C)u$  |
 
 Similarly, we can also consider 3 sites together (X, Y, Z) where X and Y have a coevolutionary relationship; Y and Z have a coevolutionary relationship. 
 
