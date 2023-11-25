@@ -6,17 +6,25 @@ library(Matrix)
 library(tidyverse)
 library(ggtree)
 
+# set simulation parameter, assuming biallelic sites (allele x and y)
 args <- commandArgs(trailingOnly = TRUE)
-run_id <- args[1]
+seq_len <- as.numeric(args[1])
+pop_size <- as.numeric(args[2])
+coev_factor <- as.numeric(args[3])
+run_ind <- args[4]
+run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "_", run_ind)
+
 outfile <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".txt")
 outfile_tree <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".tree")
 
-# set simulation parameter, assuming biallelic sites (allele x and y)
-seq_len <- 100
-pop_size <- 1000
+
+# seq_len <- 100
+# pop_size <- 1000
+# coev_factor <- 100
+
 bases <- c("x", "y")
 coev_pair <- c("yy")
-coev_factor <- 100
+
 
 # set Q of independant sites
 Q <- matrix(c(-1, 1, 1, -1), nrow = 2, ncol = 2)
@@ -185,23 +193,74 @@ simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) +
     return(result)
 }
 
+sim_seq_ind <- function(tree, rate) {
+    # Create a comprehensive state array for all nodes
+    all_node_states <- rep(0, Nnode(tree) + length(tree$tip.label))
+
+    # Calculate total branch length
+    total_branch_length <- sum(tree$edge.length)
+
+    # Step 1: Determine number of substitution events
+    num_events <- rpois(1, lambda = rate * total_branch_length)
+
+    # Step 2: Determine the location of substitution events
+    event_locations <- runif(num_events, min = 0, max = total_branch_length)
+
+    # Initialize the alleles at all nodes (0 = ancestral allele, 1 = derived allele)
+    tree$node.label <- rep(0, Nnode(tree))
+
+    # Function to propagate change to descendant nodes
+    propagateChange <- function(tree, node, newState, all_node_states) {
+        all_node_states[node] <- newState
+        descendants <- Descendants(tree, node, type = "all")
+        all_node_states[descendants] <- newState
+        return(all_node_states)
+    }
+
+    # Simulate allele changes at each event
+    current_length <- 0
+    for (event in sort(event_locations)) {
+        for (i in 1:Nedge(tree)) {
+            current_length <- current_length + tree$edge.length[i]
+            if (current_length >= event) {
+                node <- tree$edge[i, 2]
+                newState <- 1 - all_node_states[node]
+                all_node_states <- propagateChange(tree, node, newState, all_node_states)
+                break
+            }
+        }
+    }
+
+    # Step 4: Retrieve the allele of each tip node
+    tip_alleles <- all_node_states[1:length(tree$tip.label)]
+    names(tip_alleles) <- tree$tip.label
+    return(tip_alleles)
+}
 
 # generate a tree for simulation
 tree <- rtree(pop_size, rooted = T)
 # pool edge length from real-world HBV tree
-hbv_tree <- read.tree("~/hbv_covar3/analysis/phylo_build/RAxML_bestTree.HBVA_withOutGroup_tree")
+hbv_tree <- read.tree("~/hbv_covar3/analysis/phylo_build/RAxML_bestTree.HBVC_withOutGroup_tree")
 tree$edge.length <- sample(hbv_tree$edge.length, length(tree$edge.length), replace = TRUE)
 
 # simulate the coevolving sites
 # sim_result_coev <- simseq(tree, c("xx"), base_pairs, Qco)
+start_time <- Sys.time()
 sim_result_coev <- simseq(tree, c("xxx"), base_tri, Qco3)
+end_time <- Sys.time()
+print(end_time - start_time)
 # collect the simulatoin result of each tip of the tree
 sim_msa <- do.call(rbind, strsplit(sim_result_coev[, 1], ""))
 
 # simulate the independant sites
-sim_result_ind <- simseq(tree, sample(bases, seq_len, replace = T), bases, Q)
-sim_msa <- cbind(sim_msa, sim_result_ind)
+sim_ind_result <- list()
+for (site in 1:seq_len) {
+    sim_ind_result[[site]] <- ifelse(sim_seq_ind(tree, 1) == 1, "x", "y")
+}
+sim_ind_result <- do.call(cbind, sim_ind_result)
+
+sim_msa <- cbind(sim_msa, sim_ind_result)
 
 # write the simulation result
-write.table(sim_msa, outfile, row.names = TRUE, col.names = FALSE, quote = FALSE, sep = " ")
+write.dna(sim_msa, outfile, format = "fasta", colsep = "")
 write.tree(tree, outfile_tree)
