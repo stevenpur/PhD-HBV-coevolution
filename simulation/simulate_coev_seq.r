@@ -14,8 +14,8 @@ coev_factor <- as.numeric(args[3])
 run_ind <- args[4]
 run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "_", run_ind)
 
-outfile <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".txt")
-outfile_tree <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".tree")
+outfile <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".txt")
+outfile_tree <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".tree")
 
 
 # seq_len <- 100

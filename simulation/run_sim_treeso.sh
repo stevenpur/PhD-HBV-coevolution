@@ -2,7 +2,7 @@
 #SBATCH -D ./
 #SBATCH -A bag.prj
 #SBATCH -p short
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=10
 #SBATCH --array=1-100
 #SBATCH --output=result-%j.out
 
@@ -20,6 +20,9 @@ total_combinations=$(( ${#n_values[@]} * ${#f_values[@]} ))
 # Iterate over all combinations of n and f, running the simulation once for each
 for n in "${n_values[@]}"; do
     for f in "${f_values[@]}"; do
-        Rscript /users/bag/hlq763/hbv_covar3/github/analysis/simulate_coev_seq.r 100 ${n} ${f} test$run_number
+        runid=l100n${n}f${f}_test${run_number}
+        Rscript /users/bag/hlq763/hbv_covar3/github/simulation/treeso_simtest.r $rinid
     done
 done
+
+

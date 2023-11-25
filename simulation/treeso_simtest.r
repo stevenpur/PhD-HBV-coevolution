@@ -8,13 +8,16 @@ library(doParallel)
 library(glmnet)
 library(SIS)
 library(itertools)
+
+setwd("~/hbv_covar3/analysis/sim_seq/")
 args <- commandArgs(trailingOnly = TRUE)
 run_id <- args[1]
-sim_file <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".txt")
-tree_file <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".tree")
-outfile <- paste0("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/simresult_", run_id, ".txt")
+sim_file <- paste0("./simseq_", run_id, ".txt")
+tree_file <- paste0("./simseq_", run_id, ".tree")
+outfile <- paste0("./simresult_", run_id, ".txt")
 
-msa <- read.table(sim_file, header = FALSE, row.names = 1)
+msa <- seqinr::read.fasta(sim_file, seqtype = "DNA")
+msa <- do.call(rbind, msa)
 tree <- read.tree(tree_file)
 colnames(msa) <- paste0("site", 1:ncol(msa))
 site_ids <- colnames(msa)
@@ -223,4 +226,4 @@ for (i in 1:length(result)) {
     }
 }
 assoc_pair <- do.call(rbind, assoc_pair)
-write.table(assoc_pair, sep = " ", row.names = FALSE, col.names = FALSE, quote = FALSE)
+write.table(assoc_pair, outfile, sep = " ", row.names = FALSE, col.names = FALSE, quote = FALSE)
