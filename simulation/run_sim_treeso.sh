@@ -21,7 +21,7 @@ total_combinations=$(( ${#n_values[@]} * ${#f_values[@]} ))
 for n in "${n_values[@]}"; do
     for f in "${f_values[@]}"; do
         runid=l100n${n}f${f}_test${run_number}
-        Rscript /users/bag/hlq763/hbv_covar3/github/simulation/treeso_simtest.r $rinid
+        Rscript /users/bag/hlq763/hbv_covar3/github/simulation/treeso_simtest.r $runid
     done
 done
 
