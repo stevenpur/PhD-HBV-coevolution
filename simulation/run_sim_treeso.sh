@@ -20,7 +20,7 @@ total_combinations=$(( ${#n_values[@]} * ${#f_values[@]} ))
 # Iterate over all combinations of n and f, running the simulation once for each
 for n in "${n_values[@]}"; do
     for f in "${f_values[@]}"; do
-        runid=l100n${n}f${f}_test${run_number}
+        runid=l100n${n}f${f}_${run_number}
         Rscript /users/bag/hlq763/hbv_covar3/github/simulation/treeso_simtest.r $runid
     done
 done

@@ -3,7 +3,7 @@
 #SBATCH -A bag.prj
 #SBATCH -p short
 #SBATCH --cpus-per-task=1
-#SBATCH --array=1-100
+#SBATCH --array=1-1000
 #SBATCH --output=result-%j.out
 
 # Define n (sample size) and f values
@@ -20,7 +20,7 @@ total_combinations=$(( ${#n_values[@]} * ${#f_values[@]} ))
 # Iterate over all combinations of n and f, running the simulation once for each
 for n in "${n_values[@]}"; do
     for f in "${f_values[@]}"; do
-        Rscript /users/bag/hlq763/hbv_covar3/github/simulation/simulate_coev_seq.r 100 ${n} ${f} test$run_number
+        Rscript /users/bag/hlq763/hbv_covar3/github/simulation/simulate_coev_seq.r 100 ${n} ${f} $run_number
     done
 done
 
