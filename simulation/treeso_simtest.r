@@ -1,7 +1,6 @@
 library(ape)
 library(phangorn)
 library(tidyverse)
-library(ggtree)
 library(progress)
 library(foreach)
 library(doParallel)

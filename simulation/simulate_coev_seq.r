@@ -4,30 +4,46 @@ library(ape)
 library(phangorn)
 library(Matrix)
 library(tidyverse)
-library(ggtree)
 
-# set simulation parameter, assuming biallelic sites (allele x and y)
+# arguments: --len, --tree, --coev_factor, --run_ind, --mu
+# check, search, and parse arguments
 args <- commandArgs(trailingOnly = TRUE)
-seq_len <- as.numeric(args[1])
-pop_size <- as.numeric(args[2])
-coev_factor <- as.numeric(args[3])
-run_ind <- args[4]
-run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "_", run_ind)
+if (!("--len" %in% args)) {
+    stop("Missing argument: --len")
+}
+if (!("--tree" %in% args)) {
+    stop("Missing argument: --tree")
+}
+if (!("--coev_factor" %in% args)) {
+    stop("Missing argument: --coev_factor")
+}
+if (!("--run_ind" %in% args)) {
+    stop("Missing argument: --run_ind")
+}
+if (!("--mu" %in% args)) {
+    stop("Missing argument: --mu")
+}
 
+seq_len <- as.numeric(args[which(args == "--len") + 1])
+tree_file <- as.character(args[which(args == "--tree") + 1])
+coev_factor <- as.numeric(args[which(args == "--coev_factor") + 1])
+run_ind <- as.numeric(args[which(args == "--run_ind") + 1])
+u <- as.numeric(args[which(args == "--mu") + 1])
+# get the population size from the tree file
+tree <- read.tree(tree_file)
+pop_size <- length(tree$tip.label)
+# set the run id
+run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "u", u, "_", run_ind)
+
+# set the output file
 outfile <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".txt")
-outfile_tree <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".tree")
 
-
-# seq_len <- 100
-# pop_size <- 1000
-# coev_factor <- 100
-
+# set bases of the sequences, assuming biallelic for all sites
 bases <- c("x", "y")
 coev_pair <- c("yy")
 
-
 # set Q of independant sites
-Q <- matrix(c(-1, 1, 1, -1), nrow = 2, ncol = 2)
+Q <- matrix(c(-1*u, u, 1, -1*u), nrow = 2, ncol = 2)
 colnames(Q) <- bases
 rownames(Q) <- bases
 
@@ -238,10 +254,11 @@ sim_seq_ind <- function(tree, rate) {
 }
 
 # generate a tree for simulation
-tree <- rtree(pop_size, rooted = T)
+
+#tree <- rtree(pop_size, rooted = T)
 # pool edge length from real-world HBV tree
-hbv_tree <- read.tree("~/hbv_covar3/analysis/phylo_build/RAxML_bestTree.HBVC_withOutGroup_tree")
-tree$edge.length <- sample(hbv_tree$edge.length, length(tree$edge.length), replace = TRUE)
+#hbv_tree <- read.tree("~/hbv_covar3/analysis/phylo_build/RAxML_bestTree.HBVC_withOutGroup_tree")
+#tree$edge.length <- sample(hbv_tree$edge.length, length(tree$edge.length), replace = TRUE)
 
 # simulate the coevolving sites
 # sim_result_coev <- simseq(tree, c("xx"), base_pairs, Qco)
@@ -250,12 +267,14 @@ sim_result_coev <- simseq(tree, c("xxx"), base_tri, Qco3)
 end_time <- Sys.time()
 print(end_time - start_time)
 # collect the simulatoin result of each tip of the tree
+print(sim_result_coev[, 1])
 sim_msa <- do.call(rbind, strsplit(sim_result_coev[, 1], ""))
+
 
 # simulate the independant sites
 sim_ind_result <- list()
 for (site in 1:seq_len) {
-    sim_ind_result[[site]] <- ifelse(sim_seq_ind(tree, 1) == 1, "x", "y")
+    sim_ind_result[[site]] <- ifelse(sim_seq_ind(tree, u) == 1, "x", "y")
 }
 sim_ind_result <- do.call(cbind, sim_ind_result)
 
@@ -263,4 +282,4 @@ sim_msa <- cbind(sim_msa, sim_ind_result)
 
 # write the simulation result
 write.dna(sim_msa, outfile, format = "fasta", colsep = "")
-write.tree(tree, outfile_tree)
+#write.tree(tree, outfile_tree)

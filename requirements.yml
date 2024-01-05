@@ -1,0 +1,21 @@
+name: hbv_covar
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+dependencies:
+  - jupyter
+  - r-base=4.3.1
+  - r-essentials
+  - r-irkernel
+  - r-phangorn
+  - r-ape
+  - r-tidyverse
+  - r-matrix
+  - r-progress
+  - r-foreach
+  - r-doparallel
+  - r-glmnet
+  - r-sis
+  - r-itertools
+  - r-seqinr
