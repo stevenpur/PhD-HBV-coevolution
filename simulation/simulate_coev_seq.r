@@ -29,21 +29,27 @@ tree_file <- as.character(args[which(args == "--tree") + 1])
 coev_factor <- as.numeric(args[which(args == "--coev_factor") + 1])
 run_ind <- as.numeric(args[which(args == "--run_ind") + 1])
 u <- as.numeric(args[which(args == "--mu") + 1])
+
 # get the population size from the tree file
 tree <- read.tree(tree_file)
 pop_size <- length(tree$tip.label)
 # set the run id
 run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "u", u, "_", run_ind)
 
+# print the arguments
+message("seq_len: ", seq_len, "\n", "tree_file: ", tree_file, "\n", "pop_size: ", pop_size, "\n", "coev_factor: ", coev_factor, "\n", "run_ind: ", "u: ", u, "\n", run_ind, "\n")
+message("run_id: ", run_id, "\n")
+
 # set the output file
-outfile <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".txt")
+outfile <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".fasta")
 
 # set bases of the sequences, assuming biallelic for all sites
 bases <- c("x", "y")
-coev_pair <- c("yy")
+coev_pair <- c("yy", "xx")
 
+message("setting Q matrices...")
 # set Q of independant sites
-Q <- matrix(c(-1*u, u, 1, -1*u), nrow = 2, ncol = 2)
+Q <- matrix(c(-1*u, u, u, -1*u), nrow = 2, ncol = 2)
 colnames(Q) <- bases
 rownames(Q) <- bases
 
@@ -103,8 +109,8 @@ base_tri <- expand.grid(bases, bases, bases)
 base_tri <- paste0(base_tri[, 1], base_tri[, 2], base_tri[, 3])
 colnames(Qco3) <- base_tri
 rownames(Qco3) <- base_tri
-siteAB_coev_pair <- "yy"
-siteBC_coev_pair <- "yy"
+siteAB_coev_pair <- c("yy", "xx")
+siteBC_coev_pair <- c("yy", "xx")
 for (i in 1:nrow(Qco3)) {
     for (j in 1:ncol(Qco3)) {
         # skip if there is no change
@@ -235,16 +241,19 @@ sim_seq_ind <- function(tree, rate) {
 
     # Simulate allele changes at each event
     current_length <- 0
+    node_ind <- 0
     for (event in sort(event_locations)) {
-        for (i in 1:Nedge(tree)) {
-            current_length <- current_length + tree$edge.length[i]
-            if (current_length >= event) {
-                node <- tree$edge[i, 2]
-                newState <- 1 - all_node_states[node]
-                all_node_states <- propagateChange(tree, node, newState, all_node_states)
-                break
-            }
+        while (current_length < event) {
+            node_ind <- node_ind + 1
+            current_length <- current_length + tree$edge.length[node_ind]
+            
         }
+        print(current_length)
+        print(event)
+        print(node_ind)
+        node <- tree$edge[node_ind, 2]
+        newState <- 1 - all_node_states[node]
+        all_node_states <- propagateChange(tree, node, newState, all_node_states)
     }
 
     # Step 4: Retrieve the allele of each tip node
@@ -262,24 +271,27 @@ sim_seq_ind <- function(tree, rate) {
 
 # simulate the coevolving sites
 # sim_result_coev <- simseq(tree, c("xx"), base_pairs, Qco)
+message("simulating coevolving sites...")
 start_time <- Sys.time()
 sim_result_coev <- simseq(tree, c("xxx"), base_tri, Qco3)
 end_time <- Sys.time()
-print(end_time - start_time)
+message("time used: " , end_time - start_time)
 # collect the simulatoin result of each tip of the tree
-print(sim_result_coev[, 1])
 sim_msa <- do.call(rbind, strsplit(sim_result_coev[, 1], ""))
 
 
 # simulate the independant sites
+message("simulating independant independant sites...")
+start_time <- Sys.time()
 sim_ind_result <- list()
 for (site in 1:seq_len) {
     sim_ind_result[[site]] <- ifelse(sim_seq_ind(tree, u) == 1, "x", "y")
 }
 sim_ind_result <- do.call(cbind, sim_ind_result)
+end_time <- Sys.time()
+message("time used: " , end_time - start_time)
 
 sim_msa <- cbind(sim_msa, sim_ind_result)
 
 # write the simulation result
 write.dna(sim_msa, outfile, format = "fasta", colsep = "")
-#write.tree(tree, outfile_tree)
