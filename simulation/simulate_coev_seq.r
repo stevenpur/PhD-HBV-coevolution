@@ -1,4 +1,20 @@
-# simulate sequences with coevolving sites given a tree #
+# This script simulates sequences with coevolving sites given a tree.
+
+# Required Libraries:
+# - ape: for tree manipulation and simulation
+# - phangorn: for phylogenetic analysis
+# - Matrix: for matrix operations
+# - tidyverse: for data manipulation
+
+# Arguments:
+# - --len: length of the simulated sequences
+# - --tree: file path to the tree file
+# - --coev_factor: coevolution factor for coevolving site pairs
+# - --run_ind: run index for multiple simulations
+# - --mu: mutation rate
+
+# The script checks, searches, and parses the command line arguments.
+# It writes the simulation result to the output file in FASTA format.
 
 library(ape)
 library(phangorn)
@@ -186,7 +202,10 @@ simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) +
     })
     seq_states <- do.call(cbind, seq_states) # each column is the state of a base
     children <- Children(tree, cur_node)
-    for (child in children) {
+    no
+        node_name <- paste0('t', cur_node)
+        result[[node_name]]  <- start_seq
+        for (child in children) {
         # get branch length
         branch_len <- tree$edge.length[which(tree$edge[, 2] == child)]
         child_seq <- map_chr(1:ncol(seq_states), function(i) {
@@ -198,24 +217,26 @@ simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) +
             return(cur_base)
         })
         if (child > length(tree$tip.label)) {
-            # has not reach tip yet, go down another level
-            result <- simseq(tree, child_seq, levs, Q, child, result, F)
+            # has not reached tip yet, go down another level
+            child_result <- simseq(tree, child_seq, levs, Q, child, F)
         } else {
-            node_name <- tree$tip.label[child]
+            node_name <- paste0('t', child)
             result[[node_name]] <- child_seq
         }
     }
     if (head_run) {
-        # get the result into table format before output
+        # convert the result into a data frame
         result_names <- names(result)
         result <- do.call(rbind, result)
         rownames(result) <- result_names
-        result[match(tree$tip.label, rownames(result)), ]
+        return(result)
     }
     return(result)
 }
 
 sim_seq_ind <- function(tree, rate) {
+    # function implementation
+
     # Create a comprehensive state array for all nodes
     all_node_states <- rep(0, Nnode(tree) + length(tree$tip.label))
 
@@ -256,18 +277,12 @@ sim_seq_ind <- function(tree, rate) {
         all_node_states <- propagateChange(tree, node, newState, all_node_states)
     }
 
-    # Step 4: Retrieve the allele of each tip node
-    tip_alleles <- all_node_states[1:length(tree$tip.label)]
+    # Step 4: Retrieve the allele each node
+    alleles <- all_node_states
     names(tip_alleles) <- tree$tip.label
     return(tip_alleles)
 }
 
-# generate a tree for simulation
-
-#tree <- rtree(pop_size, rooted = T)
-# pool edge length from real-world HBV tree
-#hbv_tree <- read.tree("~/hbv_covar3/analysis/phylo_build/RAxML_bestTree.HBVC_withOutGroup_tree")
-#tree$edge.length <- sample(hbv_tree$edge.length, length(tree$edge.length), replace = TRUE)
 
 # simulate the coevolving sites
 # sim_result_coev <- simseq(tree, c("xx"), base_pairs, Qco)
