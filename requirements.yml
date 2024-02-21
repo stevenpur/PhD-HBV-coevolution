@@ -5,7 +5,7 @@ channels:
   - bioconda
 dependencies:
   - jupyter
-  - r-base=4.3.1
+  - r-base=4.3.2
   - r-essentials
   - r-irkernel
   - r-phangorn
