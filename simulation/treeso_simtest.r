@@ -11,7 +11,7 @@ library(itertools)
 # log the process
 lg <- list()
 
-setwd("~/hbv_covar3/analysis/sim_seq/")
+setwd("~/hbv_covar3/analysis/sim_seq/test")
 args <- commandArgs(trailingOnly = TRUE)
 lg$run_id <- args[1]
 lg$ncores <- as.numeric(args[2])
@@ -20,7 +20,7 @@ lg$log_rds_outfile <- paste0("./log_", lg$run_id, ".rds")
 # parse the number of samples
 N <- as.numeric(gsub("l.*n", "", gsub("f.*", "", lg$run_id)))
 
-lg$tree_file <- paste0("./simseq_N", N, ".tree")
+lg$tree_file <- paste0("../simseq_N", N, ".tree")
 lg$outfile <- paste0("./simresult_", lg$run_id, ".txt")
 
 # print out the arguments
@@ -40,6 +40,8 @@ tree <- read.tree(lg$tree_file)
 colnames(msa) <- paste0("site", 1:ncol(msa))
 site_ids <- colnames(msa)
 
+# keep only the tip leaves in the msa
+msa <- msa[tree$tip.label, ]
 
 
 

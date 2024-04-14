@@ -57,7 +57,7 @@ message("seq_len: ", seq_len, "\n", "tree_file: ", tree_file, "\n", "pop_size: "
 message("run_id: ", run_id, "\n")
 
 # set the output file
-outfile <- paste0("~/hbv_covar3/analysis/sim_seq/simseq_", run_id, ".fasta")
+outfile <- paste0("~/hbv_covar3/analysis/sim_seq/test/simseq_", run_id, ".fasta")
 
 # set bases of the sequences, assuming biallelic for all sites
 bases <- c("x", "y")
@@ -194,7 +194,6 @@ for (i in 1:nrow(Qco3)) {
 
 
 # function for sequence simulation
-
 simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) + 1, result = list(), head_run = T) {
     # get the starting state for each base in the sequence
     seq_states <- map(start_seq, function(cur_base) {
@@ -202,10 +201,11 @@ simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) +
     })
     seq_states <- do.call(cbind, seq_states) # each column is the state of a base
     children <- Children(tree, cur_node)
-    no
-        node_name <- paste0('t', cur_node)
-        result[[node_name]]  <- start_seq
-        for (child in children) {
+    node_name <- paste0('iid', cur_node)
+    result[[node_name]]  <- start_seq
+    print("show result:")
+    print(result)
+    for (child in children) {
         # get branch length
         branch_len <- tree$edge.length[which(tree$edge[, 2] == child)]
         child_seq <- map_chr(1:ncol(seq_states), function(i) {
@@ -218,18 +218,13 @@ simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) +
         })
         if (child > length(tree$tip.label)) {
             # has not reached tip yet, go down another level
-            child_result <- simseq(tree, child_seq, levs, Q, child, F)
+            child_result <- simseq(tree, child_seq, levs, Q, child)
+            # concat child result to the current result
+            result <- c(result, child_result)
         } else {
-            node_name <- paste0('t', child)
+            node_name <- tree$tip.label[child]
             result[[node_name]] <- child_seq
         }
-    }
-    if (head_run) {
-        # convert the result into a data frame
-        result_names <- names(result)
-        result <- do.call(rbind, result)
-        rownames(result) <- result_names
-        return(result)
     }
     return(result)
 }
@@ -269,9 +264,6 @@ sim_seq_ind <- function(tree, rate) {
             current_length <- current_length + tree$edge.length[node_ind]
             
         }
-        print(current_length)
-        print(event)
-        print(node_ind)
         node <- tree$edge[node_ind, 2]
         newState <- 1 - all_node_states[node]
         all_node_states <- propagateChange(tree, node, newState, all_node_states)
@@ -279,8 +271,8 @@ sim_seq_ind <- function(tree, rate) {
 
     # Step 4: Retrieve the allele each node
     alleles <- all_node_states
-    names(tip_alleles) <- tree$tip.label
-    return(tip_alleles)
+    names(alleles) <- c(tree$tip.label, paste0("iid", length(tree$tip.label)+(1:Nnode(tree))))
+    return(alleles)
 }
 
 
@@ -291,8 +283,8 @@ start_time <- Sys.time()
 sim_result_coev <- simseq(tree, c("xxx"), base_tri, Qco3)
 end_time <- Sys.time()
 message("time used: " , end_time - start_time)
-# collect the simulatoin result of each tip of the tree
-sim_msa <- do.call(rbind, strsplit(sim_result_coev[, 1], ""))
+# put the simulation result into a matrix
+sim_msa <- do.call(rbind, strsplit(unlist(sim_result_coev), ""))
 
 
 # simulate the independant sites
@@ -306,7 +298,7 @@ sim_ind_result <- do.call(cbind, sim_ind_result)
 end_time <- Sys.time()
 message("time used: " , end_time - start_time)
 
-sim_msa <- cbind(sim_msa, sim_ind_result)
-
+# merge the independant sites to the coevolving sites by row names
+sim_msa <- cbind(sim_msa, sim_ind_result[rownames(sim_msa), ])
 # write the simulation result
 write.dna(sim_msa, outfile, format = "fasta", colsep = "")

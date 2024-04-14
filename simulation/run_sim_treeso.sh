@@ -19,16 +19,20 @@ run_number=$SLURM_ARRAY_TASK_ID
 
 # Calculate total combinations of n and f
 total_combinations=$(( ${#n_values[@]} * ${#f_values[@]} * ${#m_values[@]} ))
-cd /well/bag/clme1992/hbv_covar3/analysis/sim_seq
+cd /well/bag/clme1992/hbv_covar3/analysis/sim_seq/test
 
 # Iterate over all combinations of n and f, running the simulation once for each
 for n in "${n_values[@]}"; do
     for f in "${f_values[@]}"; do
         for m in "${m_values[@]}"; do
-            runid=l100n${n}f${f}u${m}_${run_number}
+            param_id=l100n${n}f${f}u${m}
+            runid=${param_id}_${run_number}
+            mkdir -p $param_id
+            cd $param_id 
             # log the output
-            log_file="cout_${runid}.txt"
+            log_file=cout_${runid}.txt
             Rscript /users/bag/hlq763/hbv_covar3/github/simulation/treeso_simtest.r $runid 3 > $log_file
+            cd ..
         done
     done
 done
