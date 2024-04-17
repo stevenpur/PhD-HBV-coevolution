@@ -23,32 +23,48 @@ get_lnfu_comb <- function(files){
     return(lnfu_comb)
 }
 
-get_tp_fp <- function(tb, coev_pair, indir_coev_pair){
-    if (!'pair_id' %in% colnames(tb)) {
-        stop("pair_id not in the tb")
+get_tp_fp <- function(tb, coev_pair, indir_coev_pair, l){
+    if (class(tb) == "logical"){
+        tp_cnt <- 0
+        fp1_cnt <- 0
+        fp2_cnt <- 0
+    } else {
+        if (!'pair_id' %in% colnames(tb)) {
+            stop("pair_id not in the tb")
+        }
+        pair_id_unique <- unique(tb$pair_id)
+        el_ind <- grep("edge_length", pair_id_unique)
+        # we are not interested in edge_length signal
+        if (length(el_ind) > 0) {
+            pair_id_unique <- pair_id_unique[-el_ind]
+        }
+        tp_cnt <- sum(pair_id_unique %in% coev_pair)
+        fp1_cnt <- sum(pair_id_unique %in% indir_coev_pair)
+        fp2_cnt <- length(pair_id_unique) - tp_cnt - fp1_cnt
     }
-    pair_id_unique <- unique(tb$pair_id)
-    el_ind <- grep("edge_length", pair_id_unique)
-    # we are not interested in edge_length signal
-    if (length(el_ind) > 0) {
-        pair_id_unique <- pair_id_unique[-el_ind]
-    }
-    tp_cnt <- sum(pair_id_unique %in% coev_pair)
-    fp1_cnt <- sum(pair_id_unique %in% indir_coev_pair)
-    fp2_cnt <- length(pair_id_unique) - tp_cnt - fp1_cnt
-    return (c(tp_cnt, fp1_cnt, fp2_cnt))
+    fn_cnt <- length(coev_pair) - tp_cnt
+    tn_cnt <- choose(l, 2) - tp_cnt - fp1_cnt - fp2_cnt - fn_cnt
+    result <- c(tp_cnt, fp1_cnt, fp2_cnt, fn_cnt, tn_cnt)
+    names(result) <- c("tp", "fp1", "fp2", "fn", "tn")
+    return (result)
 }
 
-get_tpr_fpr <- function(true_dir_assoc_cnt, true_indir_assoc_cnt, l){
-    true_no_assoc_cnt <- choose(l, 2)
-    avg_tpr <- sum(tp_fp$coev_found)/(true_dir_assoc_cnt*nrow(tp_fp))
-    avg_fpr <- (sum(tp_fp$indir_coev_found) + sum(tp_fp$false_coev_found))/(true_no_assoc_cnt * nrow(tp_fp))
-    avg_indir <- sum(tp_fp$indir_coev_found) / nrow(tp_fp)
-    return(c(avg_tpr, avg_fpr, avg_indir))
+get_metrics <- function(cm) {
+    cm$fp <- sum(cm$fp1, cm$fp2)
+    accuracy <- (cm$tp + cm$tn) / sum(unlist(cm))
+    recall <- cm$tp / (cm$tp + cm$fn)
+    precision <- cm$tp / (cm$tp + cm$fp)
+    specificity <- cm$tn / (cm$tn + cm$fp)
+    f1 <- 2 * precision * recall / (precision + recall)
+    balanced_accuracy <- (recall + specificity) / 2
+    dir_indir_ratio <- cm$fp1 / cm$tp
+    result <- c(accuracy, recall, precision, specificity, balanced_accuracy, balanced_accuracy, dir_indir_ratio)
+    names(result) <- c("accuracy", "recall", "precision", "specificity", "f1", "balanced_accuracy", "dir_indir_ratio")
+    return(result)
 }
 
 
-#%% result files
+#%% result files for treeso
 pattern = "simresult.*txt"
 result_files <- list.files("./", pattern = pattern)
 
@@ -60,7 +76,7 @@ indir_coev_pair <- c("site1:site3") # the indirect coevolution
 true_dir_assoc_cnt <- 2
 true_indir_assoc_cnt <- 1
 
-#%% get the count of each files
+#%% get the performance of treeso for each parameter set 
 lnf_comb <- get_lnfu_comb(result_files)
 result <- list()
 
@@ -72,7 +88,7 @@ for (i in 1:nrow(lnf_comb)) {
     tp_fp <- map(cur_files, function(file) {
         # if there is no line, then there is no TP nor FP
         if (file.info(file)$size < 2) {
-            return(c(0, 0, 0))
+            cur_tp_fp <- get_tp_fp(NA, coev_pair, indir_coev_pair, lnf_comb$l[i])
         } else {
             # get the pair id from the result files
             tb <- read.table(file, sep = " ", header = F)
@@ -81,17 +97,20 @@ for (i in 1:nrow(lnf_comb)) {
                 paste(sort(c(tb[x, 1], tb[x, 2])), collapse = ":")
             })
             # use the pair_id to find the TP and FP
-            tp_fp <- get_tp_fp(tb, coev_pair, indir_coev_pair)
+            cur_tp_fp <- get_tp_fp(tb, coev_pair, indir_coev_pair, lnf_comb$l[i])
         }
-        return(tp_fp)
+        return(cur_tp_fp)
     })
-    tp_fp <- as.data.frame(do.call(rbind, tp_fp))
-    colnames(tp_fp) <- c("coev_found", "indir_coev_found", "false_coev_found")
-    result[[param_set]] <- get_tpr_fpr(true_dir_assoc_cnt, true_indir_assoc_cnt, lnf_comb$l[i])
+    # column-wise sum of the TP and FP
+    tp_fp_sum <- as.list(colSums(do.call(rbind, tp_fp)))
+    result[[param_set]] <- get_metrics(tp_fp_sum)
 }
 
-roc_result <- as.data.frame(do.call(rbind, result)
-colnames(roc_result) <- c("avg_tpr", "avg_fpr", "avg_indir")
+roc_result <- as.data.frame(do.call(rbind, result))
+
+#%% save the results
+setwd("~/hbv_covar3/analysis/sim_seq/")
+write.table(roc_result, file = "roc_result.txt", sep = "\t", row.names = T)
 
 #%% plot the results in contour plot
 # Replace 'path_to_your_data.csv' with the actual path to your data file
@@ -101,12 +120,11 @@ data <- roc_result
 
 
 
-
-# read the results of the dca results
+#%% read the results of the dca results
 dca_files = list.files("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/archive/", pattern = "simseq_.*mfdca.csv", full.names = T)
-dca_result <- list()
 lnf_comb2 <- get_lnfu_comb(dca_files)
 
+#%% get the performance of dca for each parameter set
 dca_result <- list()
 for (i in 1:nrow(lnf_comb2)) {
     param_set <- lnf_comb2$param_set[i]
@@ -115,7 +133,7 @@ for (i in 1:nrow(lnf_comb2)) {
     cur_files <- dca_files[grepl(param_set, dca_files)]
     tp_fp <- map(cur_files, function(file){
         if (file.info(file)$size < 2) {
-            return(c(0, 0, 0))
+            cur_tp_fp <- get_tp_fp(NA, coev_pair, indir_coev_pair, lnf_comb2$l[i])
         } else {
             tb <- read.csv(file, header = F)
             colnames(tb) <- c("siteA", "siteB", "DC_strength")
@@ -124,16 +142,24 @@ for (i in 1:nrow(lnf_comb2)) {
             tb$pair_id <- map_chr(1:nrow(tb), function(x) {
                 paste(sort(c(tb[x, 1], tb[x, 2])), collapse = ":")
             })
-            tp_fp <- get_tp_fp(tb, coev_pair, indir_coev_pair)
+            cur_tp_fp <- get_tp_fp(tb, coev_pair, indir_coev_pair, lnf_comb2$l[i])
         }
-            return(tp_fp)
+            return(cur_tp_fp)
         })
-    tp_fp <- as.data.frame(do.call(rbind, tp_fp))
-    colnames(tp_fp) <- c("coev_found", "indir_coev_found", "false_coev_found")
-    result[[param_set]] <- get_tpr_fpr(true_dir_assoc_cnt, true_indir_assoc_cnt, lnf_comb2$l[i])
+    tp_fp_sum <- as.list(colSums(do.call(rbind, tp_fp)))
+    dca_result[[param_set]] <- get_metrics(tp_fp_sum)
 }
 
-dca_roc_result <- do.call(rbind, result)
-colnames(dca_roc_result) <- c("avg_tpr", "avg_fpr", "avg_indir")
+dca_roc_result <- as.data.frame(do.call(rbind, dca_result))
+
+#%% save the results
+setwd("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/")
+write.table(dca_roc_result, file = "dca_roc_result.txt", sep = "\t", row.names = T)
+
+#%% match the two tables
+roc_result$param_set <- rownames(roc_result)
+dca_roc_result$param_set <- rownames(dca_roc_result)
+combined_roc <- merge(roc_result, dca_roc_result, by = "param_set")
+write.table(combined_roc, file = "combined_roc_result.txt", sep = "\t", row.names = F)
 
 

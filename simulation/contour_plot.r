@@ -1,4 +1,5 @@
-
+args <- commandArgs(trailingOnly = TRUE)
+dta <- args[1]
 
 data$sequence_length <- as.numeric(sub(".*l([0-9]+).*", "\\1", rownames(data)))
 data$sample_size <- as.numeric(sub(".*n([0-9]+).*", "\\1", rownames(data)))
@@ -18,13 +19,6 @@ mybreaks_indir <- seq(global_avg_indir_range[1], global_avg_indir_range[2], leng
 #Function to return the desired number of colors
 mycolors <- function(x) {
    colors <- colorRampPalette(c("darkblue", "green", "yellow"))(8)
-   colors[1:x]
-}
-
-#Function to create labels for legend
-breaklabel <- function(mybreaks){
-   labels <- paste0(mybreaks[1:8], "-", mybreaks[2:9])
-   labels
 }
 
 #Function to create the contour plot
