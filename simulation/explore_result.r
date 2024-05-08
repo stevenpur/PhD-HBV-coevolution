@@ -112,14 +112,6 @@ roc_result <- as.data.frame(do.call(rbind, result))
 setwd("~/hbv_covar3/analysis/sim_seq/")
 write.table(roc_result, file = "roc_result.txt", sep = "\t", row.names = T)
 
-#%% plot the results in contour plot
-# Replace 'path_to_your_data.csv' with the actual path to your data file
-data <- roc_result
-# Data preparation
-
-
-
-
 #%% read the results of the dca results
 dca_files = list.files("/users/bag/hlq763/hbv_covar3/analysis/sim_seq/archive/", pattern = "simseq_.*mfdca.csv", full.names = T)
 lnf_comb2 <- get_lnfu_comb(dca_files)
