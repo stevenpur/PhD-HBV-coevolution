@@ -4,7 +4,9 @@
 #SBATCH -p short
 #SBATCH --cpus-per-task=1
 #SBATCH --array=1-100
-#SBATCH --output=result-%j.out
+
+source $HOME/.bashrc
+source activate hbv_covar
 
 # Define n (sample size) and f values
 n_values=(100 1000 2000) # Sample values
@@ -23,11 +25,22 @@ cd /well/bag/clme1992/hbv_covar3/analysis/sim_seq
 
 # Iterate over all combinations of n and f, running the simulation once for each
 for n in "${n_values[@]}"; do
-    Rscript /users/bag/hlq763/hbv_covar3/github/simulation/sim_tree.r $n
     tree_file="simseq_N${n}.tree"
     for f in "${f_values[@]}"; do
         for m in "${m_values[@]}"; do
-            Rscript /users/bag/hlq763/hbv_covar3/github/simulation/simulate_coev_seq.r --len 100 --tree ${tree_file} --coev_factor ${f} --run_ind $run_number --mu ${m}
+            echo "simulating sequence data for n=${n}, f=${f}, mu=${m}..."
+            param_set="l100n${n}f${f}u${m}_${run_number}"
+            mkdir -p ${param_set}
+            cd ${param_set}
+            log_file="simseq_${param_set}_${run_number}.log"
+            Rscript /users/bag/hlq763/hbv_covar3/github/simulation/simulate_coev_seq.r \
+                --len 100 \
+                --tree ${tree_file} \
+                --coev_factor ${f} \
+                --run_ind $run_number \
+                --mu ${m} > ${log_file} 2>&1
+            cd ..
+            echo "simulation complete!"
         done
     done
 done

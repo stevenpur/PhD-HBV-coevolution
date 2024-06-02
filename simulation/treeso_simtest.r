@@ -11,11 +11,12 @@ library(itertools)
 # log the process
 lg <- list()
 
-setwd("~/hbv_covar3/analysis/sim_seq/test")
+#setwd("~/hbv_covar3/analysis/sim_seq/test")
 args <- commandArgs(trailingOnly = TRUE)
 lg$run_id <- args[1]
 lg$ncores <- as.numeric(args[2])
-lg$sim_file <- paste0("./simseq_", lg$run_id, ".fasta")
+
+lg$sim_file <- paste0("/simseq_", lg$run_id, ".fasta")
 lg$log_rds_outfile <- paste0("./log_", lg$run_id, ".rds")
 # parse the number of samples
 N <- as.numeric(gsub("l.*n", "", gsub("f.*", "", lg$run_id)))
@@ -190,6 +191,10 @@ tryCatch(
             for (i in chunk) {
                 message(i)
                 site_id <- names(site_switch)[i]
+                if (length(site_id) <= 1) {
+                    # there is less than two sites, association not possible 
+                    return(NULL)
+                }
                 # fuse the nodes together
                 site_switch_fused <- site_switch
                 dep_sites <- names(site_switch_fused)[-which(names(site_switch_fused) %in% site_id)]
@@ -259,6 +264,8 @@ tryCatch(
             }
         }
         assoc_pair <- do.call(rbind, assoc_pair)
+
+        message(paste0('writing to ', lg$outfile))
         write.table(assoc_pair, lg$outfile, sep = " ", row.names = FALSE, col.names = FALSE, quote = FALSE)
     },
     error = function(e) {

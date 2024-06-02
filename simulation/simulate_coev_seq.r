@@ -16,11 +16,13 @@
 # The script checks, searches, and parses the command line arguments.
 # It writes the simulation result to the output file in FASTA format.
 
+message('loading libraries...')
 library(ape)
 library(phangorn)
 library(Matrix)
 library(tidyverse)
 
+message('loading user parameters')
 # arguments: --len, --tree, --coev_factor, --run_ind, --mu
 # check, search, and parse arguments
 args <- commandArgs(trailingOnly = TRUE)
@@ -46,15 +48,19 @@ coev_factor <- as.numeric(args[which(args == "--coev_factor") + 1])
 run_ind <- as.numeric(args[which(args == "--run_ind") + 1])
 u <- as.numeric(args[which(args == "--mu") + 1])
 
+message('loading tree files...')
 # get the population size from the tree file
 tree <- read.tree(tree_file)
 pop_size <- length(tree$tip.label)
 # set the run id
 run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "u", u, "_", run_ind)
 
-# print the arguments
-message("seq_len: ", seq_len, "\n", "tree_file: ", tree_file, "\n", "pop_size: ", pop_size, "\n", "coev_factor: ", coev_factor, "\n", "run_ind: ", "u: ", u, "\n", run_ind, "\n")
-message("run_id: ", run_id, "\n")
+message("seq_len: ", seq_len, "\n",
+        "tree_file: ", tree_file, "\n",
+        "pop_size: ", pop_size, "\n",
+        "coev_factor: ", coev_factor, "\n",
+        "run_ind: ", run_ind, "\n",
+        "u: ", u, "\n")
 
 # set the output file
 outfile <- paste0("~/hbv_covar3/analysis/sim_seq/test/simseq_", run_id, ".fasta")
@@ -185,6 +191,9 @@ for (i in 1:nrow(Qco3)) {
     }
 }
 
+message("Q matrix:")
+print(Qco3)
+
 
 for (i in 1:nrow(Qco3)) {
     Qco3[i, i] <- -1 * sum(Qco3[i, ], na.rm = T)
@@ -203,8 +212,6 @@ simseq <- function(tree, start_seq, levs, Q, cur_node = length(tree$tip.label) +
     children <- Children(tree, cur_node)
     node_name <- paste0('iid', cur_node)
     result[[node_name]]  <- start_seq
-    print("show result:")
-    print(result)
     for (child in children) {
         # get branch length
         branch_len <- tree$edge.length[which(tree$edge[, 2] == child)]
@@ -277,12 +284,12 @@ sim_seq_ind <- function(tree, rate) {
 
 
 # simulate the coevolving sites
-# sim_result_coev <- simseq(tree, c("xx"), base_pairs, Qco)
 message("simulating coevolving sites...")
 start_time <- Sys.time()
 sim_result_coev <- simseq(tree, c("xxx"), base_tri, Qco3)
 end_time <- Sys.time()
 message("time used: " , end_time - start_time)
+
 # put the simulation result into a matrix
 sim_msa <- do.call(rbind, strsplit(unlist(sim_result_coev), ""))
 

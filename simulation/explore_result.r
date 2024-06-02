@@ -46,7 +46,7 @@ get_tp_fp <- function(tb, coev_pair, indir_coev_pair, l){
     tn_cnt <- choose(l, 2) - tp_cnt - fp1_cnt - fp2_cnt - fn_cnt
     result <- c(tp_cnt, fp1_cnt, fp2_cnt, fn_cnt, tn_cnt)
     names(result) <- c("tp", "fp1", "fp2", "fn", "tn")
-    return (result)
+    return(result)
 }
 
 get_metrics <- function(cm) {
@@ -66,7 +66,7 @@ get_metrics <- function(cm) {
 
 #%% result files for treeso
 pattern = "simresult.*txt"
-result_files <- list.files("./", pattern = pattern)
+result_files <- list.files("test/", pattern = pattern, full.names=T)
 
 if (length(result_files) == 0) {
   stop("No result files found")
@@ -84,7 +84,9 @@ for (i in 1:nrow(lnf_comb)) {
     param_set <- lnf_comb$param_set[i]
     result[[param_set]] <- list()
     message(paste0('calculating for parameter set: ', param_set))
-    cur_files <- result_files[grepl(param_set, result_files)]
+    param_set_pattern <- paste0(param_set, "_")
+    cur_files <- result_files[grepl(param_set_pattern, result_files)]
+    message(paste0('number of files: ', length(cur_files)))
     tp_fp <- map(cur_files, function(file) {
         # if there is no line, then there is no TP nor FP
         if (file.info(file)$size < 2) {
@@ -107,6 +109,19 @@ for (i in 1:nrow(lnf_comb)) {
 }
 
 roc_result <- as.data.frame(do.call(rbind, result))
+
+#%% investigate more into why treeso is failing
+lnf_comb <- "l100n1000f100u0.01" 
+cur_files <- result_files[grepl(lnf_comb, result_files)]
+for (i in 1:100){
+    file_name <- paste0("test//simresult_", lnf_comb, "_", i, ".txt")
+    if (! (file_name %in% cur_files)) {
+        message(paste0("file ", file_name, " is not in the list"))
+    } 
+}
+
+
+
 
 #%% save the results
 setwd("~/hbv_covar3/analysis/sim_seq/")

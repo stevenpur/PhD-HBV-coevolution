@@ -1,0 +1,12 @@
+---
+title: "website"
+---
+
+## Treeso
+
+Treeso is tool that helps you identify coevolutionary signals in clonal population. It addresses two common challenges: accounting for shared ancestry and distinquishing direct and indirect coevolution. More specifically, instead of looking at correlations of amino acids or nucleotids in multiple sequence alignment (MSA), it looks for correlations in substitution events in along the phylogenetic trees, accounting for the shared ancestry. It then uses lasso regression to induce sparsity when idetiying the correlations, thereby distinguishing between direct and indirect correlations. 
+
+## Benchmarking
+We used simulated sequences to compare the performance to direct coupling analysis (DCA), a popular approach used in identifying covariation signals in proteins and DNA sequences. 
+
+
