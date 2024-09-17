@@ -53,7 +53,8 @@ message('loading tree files...')
 tree <- read.tree(tree_file)
 pop_size <- length(tree$tip.label)
 # set the run id
-run_id <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "u", u, "_", run_ind)
+param_set <- paste0("l", seq_len, "n", pop_size, "f", coev_factor, "u", u)
+run_id <- paste0(param_set, "_", run_ind)
 
 message("seq_len: ", seq_len, "\n",
         "tree_file: ", tree_file, "\n",
@@ -62,8 +63,9 @@ message("seq_len: ", seq_len, "\n",
         "run_ind: ", run_ind, "\n",
         "u: ", u, "\n")
 
+
 # set the output file
-outfile <- paste0("~/hbv_covar3/analysis/sim_seq/test/simseq_", run_id, ".fasta")
+outfile <- paste0("~/hbv_covar3/analysis/sim_seq/", param_set, "/simseq_", run_id, "rescaled.fasta")
 
 # set bases of the sequences, assuming biallelic for all sites
 bases <- c("x", "y")

@@ -166,6 +166,7 @@ write.table(dca_roc_result, file = "dca_roc_result.txt", sep = "\t", row.names =
 #%% match the two tables
 roc_result$param_set <- rownames(roc_result)
 dca_roc_result$param_set <- rownames(dca_roc_result)
+
 combined_roc <- merge(roc_result, dca_roc_result, by = "param_set")
 write.table(combined_roc, file = "combined_roc_result.txt", sep = "\t", row.names = F)
 

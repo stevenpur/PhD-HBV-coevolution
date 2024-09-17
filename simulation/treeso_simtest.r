@@ -16,12 +16,15 @@ args <- commandArgs(trailingOnly = TRUE)
 lg$run_id <- args[1]
 lg$ncores <- as.numeric(args[2])
 
-lg$sim_file <- paste0("/simseq_", lg$run_id, ".fasta")
+lg$sim_file <- paste0("./simseq_", lg$run_id, ".fasta")
 lg$log_rds_outfile <- paste0("./log_", lg$run_id, ".rds")
+
+# parse the run ind
+lg$run_ind <- tail(strsplit(lg$run_id, "_")[[1]], n = 1)
 # parse the number of samples
 N <- as.numeric(gsub("l.*n", "", gsub("f.*", "", lg$run_id)))
 
-lg$tree_file <- paste0("../simseq_N", N, ".tree")
+lg$tree_file <- paste0("../simseq_N", N, "_", lg$run_ind, ".tree")
 lg$outfile <- paste0("./simresult_", lg$run_id, ".txt")
 
 # print out the arguments

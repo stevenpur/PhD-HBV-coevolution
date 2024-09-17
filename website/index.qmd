@@ -1,0 +1,58 @@
+---
+title: "website"
+---
+
+## Treeso
+
+Treeso is tool that helps you identify coevolutionary signals in clonal population. It addresses two common challenges: accounting for shared ancestry and distinquishing direct and indirect coevolution. More specifically, instead of looking at correlations of amino acids or nucleotids in multiple sequence alignment (MSA), it looks for correlations in substitution events in along the phylogenetic trees, accounting for the shared ancestry. It then uses lasso regression to induce sparsity when idetiying the correlations, thereby distinguishing between direct and indirect correlations. 
+
+## Benchmarking
+We used simulated sequences to compare the performance to direct coupling analysis (DCA), a popular approach used in identifying covariation signals in proteins and DNA sequences. 
+
+```{ojs}
+x = 1
+
+```
+
+```{r}
+
+metrics <- read.csv("combined_roc_result.txt", sep = "\t")
+
+files_strat <- strsplit(metrics$param_set, '[lnfu]')
+strat_tb <- do.call(rbind, files_strat)[, -1]
+strat_tb <- as.data.frame(apply(strat_tb, 2, as.numeric))
+colnames(strat_tb) <- c("l", "n", "f", "u")
+
+colnames(metrics) <- gsub("\\.x", " - Treeso", colnames(metrics))
+colnames(metrics) <- gsub("\\.y", " - DCA", colnames(metrics))
+
+metrics <- cbind(metrics, strat_tb)
+
+l_unique <- unique(strat_tb$l)
+n_unique <- unique(strat_tb$n)
+f_unique <- unique(strat_tb$f)
+u_unique <- unique(strat_tb$u)
+
+ojs_define(data=metrics)
+```
+
+```{ojs}
+// Reference to Inputs directly if Observable provides it globally
+
+
+viewof metrics = Inputs.select(['recall', 'accuracy', 'precision', 'specificity', 'f1', 'balanced_accuracy'], {label : "metrics to view"})
+
+metrics_tb = aq.from(transpose(data)).objects();
+
+Inputs.table(metrics_tb, {
+  columns: [
+    "f",
+    "n",
+    "u",
+    `${metrics} - Treeso`,
+    `${metrics} - DCA`,
+  ],
+})
+```
+
+
