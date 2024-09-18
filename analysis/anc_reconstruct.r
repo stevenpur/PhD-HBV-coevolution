@@ -1,33 +1,37 @@
-library(tidyverse)
-library(ape)
-library(seqinr)
-library(progress)
-library(doSNOW)
+# This script performs ancestral state reconstruction for a specified genotype of the hepatitis B virus (HBV).
+# It uses the `tidyverse`, `ape`, `seqinr`, `progress`, and `doSNOW` libraries.
 
+#########################
+# Parameters to change  #
+#########################
+
+# Set the working directory to "~/hbv_covar3"
 setwd("~/hbv_covar3")
-genotype <- "D"
-genes <- c("C", "P", "S", "X")
+
+# Set the number of cores to use for parallel processing
 ncores <- 10
 
-# output file
-anc_restruct_wrt_file <- paste0("./analysis/hbv", genotype, "_aa_anc_restruct.rds")
-
-# input file
-tree_file <- paste0("./analysis/phylo_build/RAxML_bestTree.HBV", genotype, "_rooted")
-gene_msa_files <- map(genes, function(x) {
-    paste0("./amino_acid/HBV_gene", x, "_AAseqs_noShift_stopToDot_mafft.fasta")
-})
-names(gene_msa_files) <- genes
-
-# load data
-tree <- read.tree(tree_file)
+# Specify the msa files to read in from
+genes <- c("C", "P", "S", "X")
 gene_msa <- map(genes, function(x) {
-    do.call(rbind, read.fasta(gene_msa_files[[x]]))
+    file <- paste0("./amino_acid/HBV_gene", x, "_AAseqs_noShift_stopToDot_mafft.fasta")
+    do.call(rbind, read.fasta(file))
 })
 names(gene_msa) <- genes
 
-# anc reconstruction for each varying site
-message("performing ancestral state reconstruction...")
+# Specify the output file path for the ancestral state reconstruction results
+genotype <- "D"
+anc_restruct_wrt_file <- paste0("./analysis/hbv", genotype, "_aa_anc_restruct.rds")
+
+# Specify the tree file
+tree_file <- paste0("./analysis/phylo_build/RAxML_bestTree.HBV", genotype, "_rooted")
+tree <- read.tree(tree_file)
+
+################
+# Run the code #
+################
+
+# Perform ancestral state reconstruction for each varying site
 site_ids <- unlist(map(genes, function(gene) {
     cur_msa <- gene_msa[[gene]]
     paste0("gene", gene, "_site", seq_len(ncol(cur_msa)))
@@ -47,7 +51,7 @@ for (site_id in site_ids) {
         type = "discrete",
         method = "ML"
     )
-    # add states informatino for tip nodes to anc restruct result
+    # Add states information for tip nodes to ancestral reconstruction result
     tip_nodes_lik_anc <- map(site_aas_matched, function(x) {
         ifelse(colnames(ace_result$lik.anc) == x, 1, 0)
     })
@@ -56,5 +60,5 @@ for (site_id in site_ids) {
     anc_restruct[[site_id]] <- ace_result
 }
 
-
+# Save the ancestral reconstruction results as an RDS file
 saveRDS(anc_restruct, anc_restruct_wrt_file)

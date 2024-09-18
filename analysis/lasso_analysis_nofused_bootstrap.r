@@ -7,6 +7,10 @@ library(doParallel)
 library(foreach)
 library(itertools)
 
+#########################
+# Parameters to change  #
+#########################
+
 args <- commandArgs(trailingOnly = TRUE)
 ncores <- 10
 setwd("~/hbv_covar3/")
@@ -24,6 +28,9 @@ lg$gene_msa_files <- map(lg$genes, function(x) {
 })
 names(lg$gene_msa_files) <- lg$genes
 
+################
+# Run the code #
+################
 
 # load data
 allele_switch <- readRDS(lg$allele_switch_file)
